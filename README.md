@@ -1,4 +1,4 @@
-# Install dependencies
+# Install Dependencies
 
 `composer install`
 
