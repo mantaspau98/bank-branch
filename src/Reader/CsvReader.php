@@ -8,7 +8,7 @@ class CsvReader
 {
     public function read($pathToFile)
     {
-        //open and the file
+        //open the file
         $file = fopen($pathToFile, 'r');
 
         $data_array = [];
