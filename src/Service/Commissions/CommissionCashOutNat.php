@@ -19,13 +19,13 @@ class CommissionCashOutNat implements Commission
         //check if transfer week is same as last transfers week
         if ($transaction->getDatetime()->format('oW') !== $client->getWeekNoOfLastTransfer()) {
             //diferent week, set zeroes
-            $client->setTransferedThisWeek('0');
-            $client->setNoOfTransfers(0);
+            $client->setEurTransferedThisWeek('0');
+            $client->setNoOfTransfersThisWeek(0);
             //eligible
             $discount = true;
         } else {
             //else check if stil eligible for discount the same week
-            if ($client->getNoOfTransfers() < 3 && $client->getTransferedThisWeek() < 1000) {
+            if ($client->getNoOfTransfersThisWeek() < 3 && $client->getEurTransferedThisWeek() < 1000) {
                 //eligible
                 $discount = true;
             }
@@ -36,7 +36,7 @@ class CommissionCashOutNat implements Commission
             $converter = new CurrencyConverter();
             $eurBeingTransfered = $converter->convert($transaction->getCash(), 'EUR');
 
-            $discountLeft = bcsub('1000', $client->getTransferedThisWeek(), 10);
+            $discountLeft = bcsub('1000', $client->getEurTransferedThisWeek(), 10);
 
             if (bccomp($discountLeft, $eurBeingTransfered->getAmount(), 10) < 0) {
                 $eurAmountToCommision = bcsub($eurBeingTransfered->getAmount(), $discountLeft, 10);

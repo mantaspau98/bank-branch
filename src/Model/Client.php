@@ -11,8 +11,8 @@ class Client
 {
     private $clientId;
     private $clientType;
-    private $transferedThisWeek;
-    private $noOfTransfers;
+    private $eurTransferedThisWeek;
+    private $noOfTransfersThisWeek;
     private $weekNoOfLastTransfer;
 
     const CLIENT_TYPES = ['natural', 'legal'];
@@ -24,9 +24,9 @@ class Client
         }
         $this->clientId = $clientId;
         $this->clientType = $clientType;
-        $this->noOfTransfers = 0;
+        $this->noOfTransfersThisWeek = 0;
         $this->weekNoOfLastTransfer = '0';
-        $this->transferedThisWeek = '0';
+        $this->eurTransferedThisWeek = '0';
     }
 
     public function getId(): int
@@ -39,9 +39,9 @@ class Client
         return $this->clientType;
     }
 
-    public function getNoOfTransfers(): int
+    public function getNoOfTransfersThisWeek(): int
     {
-        return $this->noOfTransfers;
+        return $this->noOfTransfersThisWeek;
     }
 
     public function getWeekNoOfLastTransfer(): string
@@ -49,14 +49,14 @@ class Client
         return $this->weekNoOfLastTransfer;
     }
 
-    public function getTransferedThisWeek(): string
+    public function getEurTransferedThisWeek(): string
     {
-        return $this->transferedThisWeek;
+        return $this->eurTransferedThisWeek;
     }
 
-    public function setTransferedThisWeek(string $number): void
+    public function setEurTransferedThisWeek(string $number): void
     {
-        $this->transferedThisWeek = $number;
+        $this->eurTransferedThisWeek = $number;
     }
 
     public function setWeekNoOfLastTransfer(string $number): void
@@ -64,9 +64,9 @@ class Client
         $this->weekNoOfLastTransfer = $number;
     }
 
-    public function setNoOfTransfers(int $number): void
+    public function setNoOfTransfersThisWeek(int $number): void
     {
-        $this->noOfTransfers = $number;
+        $this->noOfTransfersThisWeek = $number;
     }
 
     public function addTransfer(Cash $amountTransfered, string $weekNo): void
@@ -75,15 +75,15 @@ class Client
 
         if ($amountTransfered->getCurrency() === 'EUR') {
             //Add if it's eur
-            $this->transferedThisWeek = bcadd($this->transferedThisWeek, $amountTransfered->getCeiledAmount(), 10);
+            $this->eurTransferedThisWeek = bcadd($this->eurTransferedThisWeek, $amountTransfered->getCeiledAmount(), 10);
         } else {
             //convert then add
             $amountToAdd = $converter->convert($amountTransfered, 'EUR');
-            $this->transferedThisWeek = bcadd($this->transferedThisWeek, $amountToAdd->getCeiledAmount(), 10);
+            $this->eurTransferedThisWeek = bcadd($this->eurTransferedThisWeek, $amountToAdd->getCeiledAmount(), 10);
         }
         //set week no.
         $this->weekNoOfLastTransfer = $weekNo;
         //add a transfer to this week
-        ++$this->noOfTransfers;
+        ++$this->noOfTransfersThisWeek;
     }
 }

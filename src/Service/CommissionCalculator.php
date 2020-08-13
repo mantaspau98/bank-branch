@@ -12,7 +12,7 @@ use Service\Commissions\CommissionCashOutNat;
 
 class CommissionCalculator
 {
-    //nusprest kuris klientas ir apskaiciuot jo komisini
+    //Check client and operation type and calculate commision
     public function execute(Transaction $transaction): Cash
     {
         if ($transaction->getOperation()->getType() === 'cash_in') {
