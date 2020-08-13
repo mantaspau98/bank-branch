@@ -8,13 +8,13 @@ use Model\Cash;
 use Model\Transaction;
 use Service\CurrencyConverter;
 
-class CommissionCashInLeg implements Commission
+class CommissionCashIn implements Commission
 {
-    const DEFAULT_CASHIN_LEGAL_COMMISION = '0.0003';
+    const DEFAULT_CASHIN_COMMISION = '0.0003';
 
     public function Calculate(Transaction $transaction): Cash
     {
-        $commision = bcmul($transaction->getCash()->getAmount(), self::DEFAULT_CASHIN_LEGAL_COMMISION, 10);
+        $commision = bcmul($transaction->getCash()->getAmount(), self::DEFAULT_CASHIN_COMMISION, 10);
 
         if (bccomp($commision, '5.00', 10) > 0) {
             //check if more than 5 eur

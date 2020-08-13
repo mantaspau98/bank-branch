@@ -6,8 +6,7 @@ namespace Service;
 
 use Model\Cash;
 use Model\Transaction;
-use Service\Commissions\CommissionCashInLeg;
-use Service\Commissions\CommissionCashInNat;
+use Service\Commissions\CommissionCashIn;
 use Service\Commissions\CommissionCashOutLeg;
 use Service\Commissions\CommissionCashOutNat;
 
@@ -16,31 +15,25 @@ class CommissionCalculator
     //nusprest kuris klientas ir apskaiciuot jo komisini
     public function execute(Transaction $transaction): Cash
     {
-        if ($transaction->getClient()->getType() === 'legal') {
-            if ($transaction->getOperation()->getType() === 'cash_in') {
-                //legal cash_in
-                $t = new CommissionCashInLeg();
+        if ($transaction->getOperation()->getType() === 'cash_in') {
+            //Cash in same for both legal and natural clients
+            $commissionCalc = new CommissionCashIn();
 
-                return $t->Calculate($transaction);
+            return $commissionCalc->Calculate($transaction);
+        } elseif ($transaction->getOperation()->getType() === 'cash_out') {
+            if ($transaction->getClient()->getType() === 'legal') {
+                //cash out legal
+                $commissionCalc = new CommissionCashOutLeg();
+
+                return $commissionCalc->Calculate($transaction);
             } else {
-                //legal cash_out
-                $t = new CommissionCashOutLeg();
+                //cash out natural
+                $commissionCalc = new CommissionCashOutNat();
 
-                return $t->Calculate($transaction);
-            }
-        } elseif ($transaction->getClient()->getType() === 'natural') {
-            if ($transaction->getOperation()->getType() === 'cash_in') {
-                //natural cash_in
-                $t = new CommissionCashInNat();
-
-                return $t->Calculate($transaction);
-            } else {
-                //natural cash_out
-                $t = new CommissionCashOutNat();
-
-                return $t->Calculate($transaction);
+                return $commissionCalc->Calculate($transaction);
             }
         }
-        throw new Exception('Operation or Client type is not found');
+
+        throw new Exception('Operation type is not found');
     }
 }
