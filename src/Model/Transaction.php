@@ -21,22 +21,22 @@ class Transaction
         $this->cash = $cash;
     }
 
-    public function getDatetime()
+    public function getDatetime(): DateTimeImmutable
     {
         return $this->datetime;
     }
 
-    public function getClient()
+    public function getClient(): Client
     {
         return $this->client;
     }
 
-    public function getOperation()
+    public function getOperation(): Operation
     {
         return $this->operation;
     }
 
-    public function getCash()
+    public function getCash(): Cash
     {
         return $this->cash;
     }

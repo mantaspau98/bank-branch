@@ -6,7 +6,7 @@ namespace Reader;
 
 class CsvReader
 {
-    public function read($pathToFile)
+    public function read(string $pathToFile): array
     {
         //open the file
         $file = fopen($pathToFile, 'r');

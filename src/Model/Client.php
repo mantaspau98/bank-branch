@@ -54,22 +54,22 @@ class Client
         return $this->transferedThisWeek;
     }
 
-    public function setTransferedThisWeek(string $number)
+    public function setTransferedThisWeek(string $number): void
     {
         $this->transferedThisWeek = $number;
     }
 
-    public function setWeekNoOfLastTransfer(string $number)
+    public function setWeekNoOfLastTransfer(string $number): void
     {
         $this->weekNoOfLastTransfer = $number;
     }
 
-    public function setNoOfTransfers(int $number)
+    public function setNoOfTransfers(int $number): void
     {
         $this->noOfTransfers = $number;
     }
 
-    public function addTransfer(Cash $amountTransfered, string $weekNo)
+    public function addTransfer(Cash $amountTransfered, string $weekNo): void
     {
         $converter = new CurrencyConverter();
 

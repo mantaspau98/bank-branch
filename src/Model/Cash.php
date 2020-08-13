@@ -24,7 +24,7 @@ class Cash
         return $this->amount;
     }
 
-    public function setAmount(string $amount)
+    public function setAmount(string $amount): void
     {
         $this->amount = $amount;
     }
