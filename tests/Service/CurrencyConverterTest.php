@@ -9,15 +9,6 @@ use Model\Cash;
 
 class CurrencyConverterTest extends TestCase
 {
-    /**
-     * @var CurrencyConverter
-     */
-    private $converter;
-
-    public function setUp()
-    {
-        $this->converter = new CurrencyConverter();
-    }
 
     /**
      * @param string $leftOperand
@@ -30,19 +21,28 @@ class CurrencyConverterTest extends TestCase
     {
         $this->assertEquals(
             $expectation,
-            $this->converter->convert($cash, $to)->getCeiledAmount()
+            $cash->getConverter()->convert($cash, $to)->getCeiledAmount()
         );
     }
 
     public function dataProviderForAddTesting(): array
     {
+        //set mock rates for testing
+        $mockRates = [
+            'EUR' => ['name' => 'EUR', 'rate' => '1', 'precision' => 2],
+            'USD' => ['name' => 'USD', 'rate' => '1.1497', 'precision' => 2],
+            'JPY' => ['name' => 'JPY', 'rate' => '129.53', 'precision' => 0],
+        ];
+        
+        $converter = new CurrencyConverter($mockRates);
+        
         return [
-            'convert 1 EUR to EUR and ceil it' => [new Cash('1', 'EUR'), 'EUR', '1'],
-            'convert 1 EUR to JPY and ceil it' => [new Cash('1', 'EUR'), 'JPY', '130'],
-            'convert 1 EUR to USD and ceil it' => [new Cash('1', 'EUR'), 'USD', '1.15'],
+            'convert 1 EUR to EUR and ceil it' => [new Cash('1', 'EUR', $converter), 'EUR', '1'],
+            'convert 1 EUR to JPY and ceil it' => [new Cash('1', 'EUR', $converter), 'JPY', '130'],
+            'convert 1 EUR to USD and ceil it' => [new Cash('1', 'EUR', $converter), 'USD', '1.15'],
 
-            'convert 1 JPY to EUR and ceil it' => [new Cash('100', 'JPY'), 'EUR', '0.78'],
-            'convert 1 USD to EUR and ceil it' => [new Cash('1', 'USD'), 'EUR', '0.87'],
+            'convert 1 JPY to EUR and ceil it' => [new Cash('100', 'JPY', $converter), 'EUR', '0.78'],
+            'convert 1 USD to EUR and ceil it' => [new Cash('1', 'USD', $converter), 'EUR', '0.87'],
         ];
     }
 }

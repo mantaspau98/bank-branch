@@ -6,7 +6,6 @@ namespace Service\Commissions;
 
 use Model\Cash;
 use Model\Transaction;
-use Service\CurrencyConverter;
 
 class CommissionCashIn implements Commission
 {
@@ -18,12 +17,12 @@ class CommissionCashIn implements Commission
 
         if (bccomp($commision, '5.00', 10) > 0) {
             //check if more than 5 eur
-            $converter = new CurrencyConverter();
-            $newAmount = $converter->convert(new Cash('5.00', 'EUR'), $transaction->getCash()->getCurrency())->getAmount();
+            $converter = $transaction->getCash()->getConverter();
+            $newAmount = $converter->convert(new Cash('5.00', 'EUR', $transaction->getCash()->getConverter()), $transaction->getCash()->getCurrency())->getAmount();
 
-            return new Cash($newAmount, $transaction->getCash()->getCurrency());
+            return new Cash($newAmount, $transaction->getCash()->getCurrency(), $transaction->getCash()->getConverter());
         }
 
-        return new Cash($commision, $transaction->getCash()->getCurrency());
+        return new Cash($commision, $transaction->getCash()->getCurrency(), $transaction->getCash()->getConverter());
     }
 }

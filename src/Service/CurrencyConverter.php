@@ -9,15 +9,11 @@ use Model\Cash;
 class CurrencyConverter
 {
     //convert currencies here
-    private $rates = [
-        'EUR' => ['name' => 'EUR', 'rate' => '1', 'precision' => 2],
-         'USD' => ['name' => 'USD', 'rate' => '1.1497', 'precision' => 2],
-          'JPY' => ['name' => 'JPY', 'rate' => '129.53', 'precision' => 0],
-        ];
+    private $rates;
 
-    public function convertToEur(Cash $cash): Cash
+    public function __construct(array $rates)
     {
-        return new Cash(bcdiv($cash->getAmount(), $this->rates[$cash->getCurrency()]['rate'], 10), 'EUR');
+        $this->rates = $rates;
     }
 
     public function getPrecision(string $currency): int
@@ -32,9 +28,9 @@ class CurrencyConverter
         }
 
         if ($to === 'EUR') {
-            return new Cash(bcdiv($cash->getAmount(), $this->rates[$cash->getCurrency()]['rate'], 10), 'EUR');
+            return new Cash(bcdiv($cash->getAmount(), $this->rates[$cash->getCurrency()]['rate'], 10), $to, $cash->getConverter());
         } else {
-            return new Cash(bcmul($cash->getAmount(), $this->rates[$to]['rate'], 10), $to);
+            return new Cash(bcmul($cash->getAmount(), $this->rates[$to]['rate'], 10), $to, $cash->getConverter());
         }
     }
 }

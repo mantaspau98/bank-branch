@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Model;
 
 use Exception;
-use Service\CurrencyConverter;
 
 class Client
 {
@@ -71,7 +70,7 @@ class Client
 
     public function addTransfer(Cash $amountTransfered, string $weekNo): void
     {
-        $converter = new CurrencyConverter();
+        $converter = $amountTransfered->getConverter();
 
         if ($amountTransfered->getCurrency() === 'EUR') {
             //Add if it's eur

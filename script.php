@@ -25,6 +25,15 @@ $data_arr = $reader->read($pathToFile);
 
 $comCalc = new CommissionCalculator();
 
+$rates = [
+        'EUR' => ['name' => 'EUR', 'rate' => '1', 'precision' => 2],
+        'USD' => ['name' => 'USD', 'rate' => '1.1497', 'precision' => 2],
+        'JPY' => ['name' => 'JPY', 'rate' => '129.53', 'precision' => 0],
+    ];
+
+//one converter and rates for whole app - single source of truth
+$converter = new CurrencyConverter($rates);
+
 $clientArr = [];
 
 foreach($data_arr as $csvLine) {
@@ -38,7 +47,7 @@ foreach($data_arr as $csvLine) {
     }
 
     $operation = new Operation($csvLine[3]);
-    $cash = new Cash($csvLine[4], $csvLine[5]);
+    $cash = new Cash($csvLine[4], $csvLine[5], $converter);
     $date = new DateTimeImmutable($csvLine[0]);
     $transaction = new Transaction($date, $client, $operation, $cash);
 

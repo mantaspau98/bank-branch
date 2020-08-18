@@ -6,7 +6,6 @@ namespace Service\Commissions;
 
 use Model\Cash;
 use Model\Transaction;
-use Service\CurrencyConverter;
 
 class CommissionCashOutLeg implements Commission
 {
@@ -17,12 +16,12 @@ class CommissionCashOutLeg implements Commission
         $commision = bcmul($transaction->getCash()->getAmount(), self::DEFAULT_CASHOUT_LEGAL_COMMISION, 10);
 
         if (bccomp($commision, '0.50', 10) < 0) {
-            $converter = new CurrencyConverter();
-            $newAmount = $converter->convert(new Cash('0.50', 'EUR'), $transaction->getCash()->getCurrency())->getAmount();
+            $converter = $transaction->getCash()->getConverter();
+            $newAmount = $converter->convert(new Cash('0.50', 'EUR', $transaction->getCash()->getConverter()), $transaction->getCash()->getCurrency())->getAmount();
 
-            return new Cash($newAmount, $transaction->getCash()->getCurrency());
+            return new Cash($newAmount, $transaction->getCash()->getCurrency(), $transaction->getCash()->getConverter());
         }
 
-        return new Cash($commision, $transaction->getCash()->getCurrency());
+        return new Cash($commision, $transaction->getCash()->getCurrency(), $transaction->getCash()->getConverter());
     }
 }

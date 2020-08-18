@@ -12,11 +12,11 @@ class Cash
     private $currency;
     private $converter;
 
-    public function __construct(string $amount, string $currency)
+    public function __construct(string $amount, string $currency, CurrencyConverter $converter)
     {
         $this->amount = $amount;
         $this->currency = $currency;
-        $this->converter = new CurrencyConverter();
+        $this->converter = $converter;
     }
 
     public function getAmount(): string
@@ -37,6 +37,11 @@ class Cash
     public function getAmountEur(): string
     {
         return $this->converter->convert($this, 'EUR')->getAmount();
+    }
+
+    public function getConverter(): CurrencyConverter
+    {
+        return $this->converter;
     }
 
     public function getCeiledAmount(): string

@@ -9,49 +9,220 @@ use Model;
 
 class CommissionTest extends TestCase
 {
-    /**
-     * @var CommissionCalculator
-     */
+
     private $commissionCalculator;
+    private $mockRates = [
+        'EUR' => ['name' => 'EUR', 'rate' => '1', 'precision' => 2],
+        'USD' => ['name' => 'USD', 'rate' => '1.1497', 'precision' => 2],
+        'JPY' => ['name' => 'JPY', 'rate' => '129.53', 'precision' => 0],
+    ];
 
     public function setUp()
     {
         $this->commissionCalculator = new Service\CommissionCalculator();
     }
 
-    /**
-     * @param string $leftOperand
-     * @param string $rightOperand
-     * @param string $expectation
-     *
-     * @dataProvider dataProviderTestCommissionCalc
-     */
-    public function testCashInLegal(string $operation, string $amount, string $currency, string $dateTime, Model\Client $client, string $expectedCommission)
+
+    public function testCashIn()
     {
-        $transaction = new Model\Transaction(new \DateTimeImmutable($dateTime), $client, new Model\Operation($operation), new Model\Cash($amount, $currency));
+        //Cash in
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_in');
+        $cash = new Model\Cash('1000.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'legal');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
         $this->assertEquals(
-            $expectedCommission,
+            '0.30',
             $this->commissionCalculator->execute($transaction)->getCeiledAmount()
         );
     }
 
-    public function dataProviderTestCommissionCalc(): array
+    public function testCashInUpperLimit()
     {
-        //create client to test discount
-        $testClient = new Model\Client('4', 'natural');
-        return [
-            //tests with the same person
-            '1. test natural client cash out 1200EUR, discount given on first 1000 EUR' => ['cash_out', '1200.00', 'EUR', '2014-12-31', $testClient, '0.60'],
-            '2. test natural client cash out 1200EUR in the same week, discount does not apply' => ['cash_out', '1200.00', 'EUR', '2015-01-01', $testClient, '3.60'],
-            '3. test natural client cash out 500EUR in the next week, discount applies again' => ['cash_out', '500.00', 'EUR', '2015-01-06', $testClient, '0.00'],
-            '4. test natural client cash out 500EUR in the same week, discount still applies' => ['cash_out', '500.00', 'EUR', '2015-01-07', $testClient, '0.00'],
-            '5. test natural client cash out 200EUR in the same week, discount does not apply anymore' => ['cash_out', '200.00', 'EUR', '2015-01-07', $testClient, '0.60'],
+        //Cash in commisssion upper limit is 5EUR
+        $converter = new Service\CurrencyConverter($this->mockRates);
 
-            //other commission calculations
-            'legal client cash out 100 JPY, a minimum of 0.50EUR is charged (and converted to JPY)' => ['cash_out', '100', 'JPY', '2015-01-01', new Model\Client('1', 'legal'), '65'],
-            'legal client cash in 1000000 EUR, a maximum of 5.00EUR is charged' => ['cash_in', '1000000.00', 'EUR', '2015-01-01', new Model\Client('1', 'legal'), '5.00'],
-            'natural client cash in 1000000 EUR, a maximum of 5.00EUR is charged' => ['cash_in', '1000000.00', 'EUR', '2015-01-01', new Model\Client('1', 'natural'), '5.00'],
-            'natural client cash in 1000000 USD, a maximum of 5.00EUR is charged (and converted to USD)' => ['cash_in', '1000000.00', 'USD', '2015-01-01', new Model\Client('1', 'natural'), '5.75'],
-        ];
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_in');
+        $cash = new Model\Cash('1000000.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'legal');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '5.00',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
     }
+
+    public function testCashOutLegal()
+    {
+        //Cash out legal
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('1000.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'legal');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '3.00',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutLegalLowerLimit()
+    {
+        //Cash out legal cannot be less than 0.50EUR
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('1.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'legal');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.50',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutLegalLowerLimitDifferentCurrency()
+    {
+        //Cash out legal cannot be less than 0.50EUR even in other currencies than EUR but commission is still in the original currency 
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('1.00', 'USD', $converter);
+        $client = new Model\Client('1', 'legal');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.58',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutNaturalDiscountTest()
+    {
+        //Cash out natural discount up to 1000EUR a week
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('1000.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'natural');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.00',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutNaturalDiscountTestSplitSameTransaction()
+    {
+        //Cash out natural discount up to 1000EUR a week
+        //200EUR is still being commissioned
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('1200.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'natural');
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.60',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutNaturalDiscountTestSepareteTransaction()
+    {
+        //Client has already transfered more than 1000 this week.
+        //All other transactions same week will not have discount
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('200.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'natural');
+
+        //Add existing transfers
+        $mockDateTime = new \DateTimeImmutable('2014-12-31');
+        $mockCash = new Model\Cash('1200.00', 'EUR', $converter);
+        $client->addTransfer($mockCash, $dateTime->format('oW'));
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.60',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutNaturalDiscountUpTo3TransfersPerWeek()
+    {
+        //Client has already made 3 transfers this week
+        //Additional transfers will not have discount
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2014-12-31');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('200.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'natural');
+
+        //Add existing transfers
+        $mockDateTime = new \DateTimeImmutable('2014-12-31');
+        $mockCash = new Model\Cash('100.00', 'EUR', $converter);
+        $client->addTransfer($mockCash, $dateTime->format('oW'));
+        $client->addTransfer($mockCash, $dateTime->format('oW'));
+        $client->addTransfer($mockCash, $dateTime->format('oW'));
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.60',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+    public function testCashOutNaturalDifferentYearSameWeek()
+    {
+        //Client has already transfered more than 1000 this week.
+        //Additional transfers will not have discount even if they are in different year
+        $converter = new Service\CurrencyConverter($this->mockRates);
+
+        $dateTime = new \DateTimeImmutable('2015-01-01');
+        $operation = new Model\Operation('cash_out');
+        $cash = new Model\Cash('200.00', 'EUR', $converter);
+        $client = new Model\Client('1', 'natural');
+
+        //Add existing transfers
+        $mockDateTime = new \DateTimeImmutable('2014-12-31');
+        $mockCash = new Model\Cash('1000.00', 'EUR', $converter);
+        $client->addTransfer($mockCash, $dateTime->format('oW'));
+
+        $transaction = new Model\Transaction($dateTime, $client, $operation, $cash);
+
+        $this->assertEquals(
+            '0.60',
+            $this->commissionCalculator->execute($transaction)->getCeiledAmount()
+        );
+    }
+
+
 }
